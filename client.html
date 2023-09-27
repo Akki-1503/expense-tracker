@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Expense Management</title>
+       
+    </head>
+    <body>
+
+        <div id="root">
+
+        </div>
+        <script crossorigin src="https://unpkg.com/react@16/umd/react.development.js"></script>
+        <script crossorigin src="https://unpkg.com/react-dom@16/umd/react-dom.development.js"></script>
+        <script crossorigin src="https://unpkg.com/babel-standalone@6.26.0/babel.js"></script>
+        <script src="https://unpkg.com/axios@0.16.1/dist/axios.js"></script>
+
+        <script type="text/babel">
+        const rootHandle = document.getElementById('root')
+       
+            const{useState, useEffect} = React
+
+            function List(props){
+                const{result} = props
+
+                console.log(result)
+                return (
+                    <div>
+                        <h2>Listing Categories </h2>
+                        <ul>{
+                            result.map((ele,i)=>{
+                                return <li key={i}> {ele.name}<button>remove</button> </li>
+                            })
+                        }
+                        </ul>
+                    </div>
+                )
+            }
+
+            function ExpenseTable(props){
+                const {expensedata, result} = props
+                return (
+                    <div>
+                        <h2>Listing  Expenses</h2>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Amount</th>
+                                    <th>Category</th>
+                                    <th>Expense Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {
+                                    expensedata.map((expense)=>{
+                                      const category = result.find((category)=>{
+                                           // console.log(category)
+                                      return expense.categoryId==category._id 
+                                        })
+                                        console.log(category)
+                                       
+                                        return <tr key={expense._id}>
+                                            <td>{expense.title} </td>
+                                            <td>{expense.amount} </td>
+                                            <td>{category.name} </td>
+                                            <td>{expense.expenseDate} </td>
+                                        </tr>
+                                    }) 
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                )
+            }
+            function Form(props){
+                const[categoryInput, setCategoryInput] = useState('')
+                const[formErrors, setFormErrors] = useState('')
+                const{handleResponse} = props 
+                const handleChange =(e)=>{
+                    setCategoryInput(e.target.value)
+                }
+
+                const handleSubmit =(e)=>{
+                    e.preventDefault()
+                    const formData ={
+                        name: categoryInput
+                    }
+                    if(categoryInput.length >0){
+                        setFormErrors('')
+                    axios.post('http://localhost:3040/api/categories', formData)
+                    .then((response)=>{
+                    console.log(response.data)
+                   handleResponse(response.data)
+                    })
+                    .catch((err)=>{
+                        console.log(err)
+                    })
+                    setCategoryInput('')
+                }
+                else{
+                    setFormErrors('Field cannot be blank')
+                }
+                }
+
+                return (
+                    <div>
+                        <form onSubmit ={handleSubmit}>
+                            <label>Add Category </label> <br />
+                            <input type="text" value={categoryInput} onChange={handleChange} /> 
+                            <span>{formErrors}</span><br />
+
+                            <input type="submit" value="submit" />
+                        </form>
+                    </div>
+                )
+            }
+
+            function ExpenseForm(props){
+                const[expenseInput, setExpenseInput] = useState('')
+                const[amount, setAmount] = useState('')
+                const[expenseDate, setExpenseDate] = useState('')
+                const[selectCategory, setSelectCategory] = useState('')
+                const{result, handleExpenseResponse} = props
+
+                const handleChange =(e)=>{
+                    setExpenseInput(e.target.value)
+                }
+
+                const handleAmtChange =(e)=>{
+                    setAmount(e.target.value)
+                }
+
+                const handleDateChange =(e)=>{
+                    setExpenseDate(e.target.value)
+                }
+
+                const handleCategorydropdown =(e)=>{
+                    setSelectCategory(e.target.value)
+                }
+
+                
+                const handleSubmit= (e)=>{
+                    e.preventDefault()
+                    const formData ={
+                        title: expenseInput,
+                        amount:amount,
+                        expenseDate: expenseDate,
+                        categoryId : selectCategory
+                    }
+                    console.log('formdata', formData)
+                    axios.post('http://localhost:3040/api/expenses', formData)
+                    .then((response)=>{
+                        //console.log(response.data)
+                        handleExpenseResponse(response.data)
+                    })
+                    .catch((err)=>{
+                        console.log(err)
+                    })
+                }
+                
+                    return (
+                        <div>
+                            <form onSubmit ={handleSubmit}>
+                              <label> Add Expense </label> <br />
+                              <input type ="text" value={expenseInput} placeholder="title" onChange={handleChange} /> <br />
+
+                              <input type ="text" value={amount} placeholder="amount" onChange={handleAmtChange} /> <br />
+
+                            <input type ="date" value={expenseDate} onChange={handleDateChange}/> <br />
+
+                            <select value={selectCategory} onChange={handleCategorydropdown}>
+                                <option>select category </option>
+                               { result.map((category,i)=>{
+                                    return <option key={i} value={category._id}>{category.name} </option>
+                                }) 
+                            }
+                            
+                            </select>
+
+                            <input type="submit" value="create" />
+                            
+
+                            </form>
+                        </div>
+                    )
+                }
+            function App(props){
+                const[result, setResult] = useState([])
+                const[expensedata, setExpensedata] = useState([])
+
+                // useEffect (()=>{
+                //     axios.get('http://localhost:3040/api/categories')
+                //     .then((response) =>{
+                //       // const result = response.data
+                //        setResult(response.data)
+                //     })
+                //     .catch((err)=>{
+                //         console.log(err)
+                //     })
+                //   } ,[])
+
+                useEffect(()=>{
+                    let urls =[
+                    'http://localhost:3040/api/categories',
+                    'http://localhost:3040/api/expenses'
+                    ]
+                    axios.all(urls.map((url)=>axios.get(url)))
+                    .then((response)=>{
+                        console.log('axios-all', response)
+                        const[categories, expenses] = response
+                        console.log('categories', categories.data)
+                        setResult(categories.data)
+                        console.log('expenses', expenses.data)
+                        setExpensedata(expenses.data)
+
+                    })
+                },[])
+                // useEffect(()=>{
+                //     let urls =[
+                //     'http://localhost:3040/api/categories',
+                //     'http://localhost:3040/api/expenses'
+                //     ]
+                //     Promise.all(urls.map((url)=>axios.get(url)))
+                //     .then((response)=>{
+                //         console.log('promise-all', response)
+                //         const[categories, expenses] = response
+                //      console.log('categories', categories.data)
+                //      console.log('expenses', expenses.data)
+                //     })
+                // },[])
+
+                const handleResponse =(data)=>{
+                   // setResult(data)
+                   setResult([...result, data])
+                  }
+
+                  const handleExpenseResponse=(data)=>{
+                    setExpensedata([...expensedata, data])
+                  }
+                  //console.log('Expensedata', expensedata)
+                return (
+                    <div>
+                        <h2>Expense Management </h2>
+                        <div className ="row">
+                            
+                        <Form handleResponse={handleResponse}/>
+                        <List result={result}/>
+                        <ExpenseForm result={result} handleExpenseResponse={handleExpenseResponse}/>
+                        <ExpenseTable expensedata={expensedata} result={result}/>
+                        
+                    </div>
+                       
+                        <h3>{result.name} </h3>
+                    </div>
+                )
+            }
+          
+            ReactDOM.render(<App />, rootHandle)
+        </script>
+    </body>
+</html>
